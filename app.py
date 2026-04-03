@@ -269,7 +269,7 @@ df = load_data()
 pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1, feature_cols = train_or_load_model(df)
 
 st.markdown("""
-<h1 style='text-align: center; color: #2c3e50;'>
+<h1  color: #2c3e50;'>
 🚀 ỨNG DỤNG MACHINE LEARNING
 </h1>
 <h3 style='text-align: center; color: gray;'>
