@@ -11,6 +11,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -18,9 +19,9 @@ from sklearn.metrics import (
     f1_score,
     confusion_matrix,
     roc_auc_score,
-    classification_report
+    classification_report,
+    roc_curve
 )
-from lightgbm import LGBMClassifier
 
 st.set_page_config(page_title="Phân loại tái nhập viện", layout="wide")
 
@@ -32,26 +33,31 @@ st.markdown("""
 h1, h2, h3 {
     color: #2c3e50;
 }
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
 .stMetric {
     background-color: white;
     padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-.block-container {
-    padding-top: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .stButton > button {
-    background-color: #3498db;
+    background-color: #2563eb;
     color: white;
-    border-radius: 8px;
+    border-radius: 10px;
+    border: none;
     height: 3em;
     width: 100%;
-    border: none;
+    font-weight: 600;
 }
 .stButton > button:hover {
-    background-color: #2980b9;
+    background-color: #1d4ed8;
     color: white;
+}
+div[data-testid="stSidebar"] {
+    background-color: #eef3f8;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -59,17 +65,19 @@ h1, h2, h3 {
 # =========================
 # CẤU HÌNH CHUNG
 # =========================
-TITLE = "Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường"
+TITLE = "Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án bằng Random Forest nhằm hỗ trợ phát hiện sớm bệnh nhân có rủi ro cao"
 STUDENT_NAME = "Họ tên sinh viên: Trần Quang Tiến"
 STUDENT_ID = "MSSV: 22T1020760"
+DATA_SOURCE = "UCI Machine Learning Repository - Diabetes 130-US hospitals for years 1999-2008"
+
 TOPIC_DESC = (
-    "Ứng dụng mô hình học máy để phân loại bệnh nhân có nguy cơ tái nhập viện "
-    "dựa trên dữ liệu bệnh án, từ đó hỗ trợ đánh giá mức độ rủi ro và giúp "
-    "ưu tiên theo dõi các trường hợp cần chú ý."
+    "Bài toán giúp xác định sớm bệnh nhân có nguy cơ tái nhập viện cao dựa trên dữ liệu bệnh án, "
+    "từ đó hỗ trợ bác sĩ theo dõi, phân nhóm rủi ro và đưa ra phương án điều trị phù hợp hơn. "
+    "Kết quả góp phần nâng cao hiệu quả điều trị, giảm chi phí y tế và hạn chế tái nhập viện không mong muốn."
 )
 
 MODEL_DIR = "models"
-MODEL_PATH = os.path.join(MODEL_DIR, "lightgbm_best.pkl")
+MODEL_PATH = os.path.join(MODEL_DIR, "random_forest_best.pkl")
 
 
 # =========================
@@ -81,12 +89,13 @@ def load_data():
 
 
 # =========================
-# TIỀN XỬ LÝ
+# TIỀN XỬ LÝ DỮ LIỆU
 # =========================
 def prepare_data(df):
     data = df.copy()
     data = data.replace("?", np.nan)
 
+    # Nhãn mục tiêu: 0 = không tái nhập viện, 1 = có tái nhập viện
     data["target"] = data["readmitted"].apply(lambda x: 0 if x == "NO" else 1)
 
     drop_cols = [
@@ -157,14 +166,16 @@ def train_or_load_model(df):
     X, y, cat_cols, num_cols, _ = prepare_data(df)
 
     X_train_full, X_test, y_train_full, y_test = train_test_split(
-        X, y,
+        X,
+        y,
         test_size=0.2,
         stratify=y,
         random_state=42
     )
 
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train_full, y_train_full,
+        X_train_full,
+        y_train_full,
         test_size=0.2,
         stratify=y_train_full,
         random_state=42
@@ -172,7 +183,13 @@ def train_or_load_model(df):
 
     if os.path.exists(MODEL_PATH):
         saved = joblib.load(MODEL_PATH)
-        required_keys = ["pipeline", "best_threshold", "best_params", "best_cv_f1", "feature_cols"]
+        required_keys = [
+            "pipeline",
+            "best_threshold",
+            "best_params",
+            "best_cv_f1",
+            "feature_cols"
+        ]
         if all(k in saved for k in required_keys):
             return (
                 saved["pipeline"],
@@ -182,7 +199,9 @@ def train_or_load_model(df):
                 saved["best_threshold"],
                 saved["best_params"],
                 saved["best_cv_f1"],
-                saved["feature_cols"]
+                saved["feature_cols"],
+                cat_cols,
+                num_cols
             )
 
     num_pipeline = Pipeline([
@@ -201,35 +220,29 @@ def train_or_load_model(df):
 
     pipeline = Pipeline([
         ("preprocessor", preprocessor),
-        ("model", LGBMClassifier(
-            objective="binary",
-            class_weight="balanced",
+        ("model", RandomForestClassifier(
             random_state=42,
-            n_jobs=1,
-            verbose=-1
+            class_weight="balanced",
+            n_jobs=-1
         ))
     ])
 
     param_grid = {
-        "model__n_estimators": [300, 500, 800],
-        "model__learning_rate": [0.03, 0.05, 0.07],
-        "model__num_leaves": [31, 63, 127],
-        "model__max_depth": [-1, 6, 8, 10],
-        "model__min_child_samples": [10, 20, 30],
-        "model__subsample": [0.8, 0.9, 1.0],
-        "model__colsample_bytree": [0.8, 0.9, 1.0],
-        "model__reg_alpha": [0.0, 0.1, 0.2],
-        "model__reg_lambda": [1, 2, 3]
+        "model__n_estimators": [200, 300, 500],
+        "model__max_depth": [8, 12, 16, None],
+        "model__min_samples_split": [2, 5, 10],
+        "model__min_samples_leaf": [1, 2, 4],
+        "model__max_features": ["sqrt", "log2", None]
     }
 
     search = RandomizedSearchCV(
         estimator=pipeline,
         param_distributions=param_grid,
-        n_iter=15,
+        n_iter=12,
         scoring="f1",
         cv=3,
         random_state=42,
-        n_jobs=1,
+        n_jobs=-1,
         verbose=1
     )
 
@@ -252,33 +265,64 @@ def train_or_load_model(df):
         MODEL_PATH
     )
 
-    return best_pipeline, X_test, y_test, X, best_threshold, search.best_params_, search.best_score_, X.columns.tolist()
+    return (
+        best_pipeline,
+        X_test,
+        y_test,
+        X,
+        best_threshold,
+        search.best_params_,
+        search.best_score_,
+        X.columns.tolist(),
+        cat_cols,
+        num_cols
+    )
 
 
 def reset_model():
     if os.path.exists(MODEL_DIR):
         shutil.rmtree(MODEL_DIR)
     st.cache_resource.clear()
-    st.success("Đã xóa model cũ. Tải lại trang để train lại.")
+    st.success("Đã xóa model cũ. Tải lại trang để huấn luyện lại mô hình.")
+
+
+# =========================
+# FEATURE IMPORTANCE
+# =========================
+def get_feature_importance(pipeline, feature_cols):
+    try:
+        preprocessor = pipeline.named_steps["preprocessor"]
+        model = pipeline.named_steps["model"]
+
+        transformed_feature_names = preprocessor.get_feature_names_out()
+        importances = model.feature_importances_
+
+        fi_df = pd.DataFrame({
+            "feature": transformed_feature_names,
+            "importance": importances
+        }).sort_values(by="importance", ascending=False)
+
+        return fi_df
+    except Exception:
+        return pd.DataFrame(columns=["feature", "importance"])
 
 
 # =========================
 # LOAD
 # =========================
 df = load_data()
-pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1, feature_cols = train_or_load_model(df)
+pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1, feature_cols, cat_cols, num_cols = train_or_load_model(df)
 
 st.markdown("""
-<h1  color: #2c3e50;'>
-🚀 Phân loại bênh nhân tái nhập viện
-
+<h1 style='color: #2c3e50;'>
+🚀 Phân loại bệnh nhân tái nhập viện
 </h1>
-
 <hr>
 """, unsafe_allow_html=True)
 
 st.subheader(TITLE)
 
+st.sidebar.title("Điều hướng")
 page = st.sidebar.radio(
     "Chọn trang",
     [
@@ -289,6 +333,11 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
+st.sidebar.markdown("### Thông tin mô hình")
+st.sidebar.write("**Thuật toán:** Random Forest")
+st.sidebar.write(f"**Ngưỡng tối ưu:** {best_threshold:.2f}")
+st.sidebar.write(f"**Số đặc trưng đầu vào:** {len(feature_cols)}")
+
 if st.sidebar.button("Xóa model cũ và train lại"):
     reset_model()
 
@@ -298,15 +347,17 @@ if st.sidebar.button("Xóa model cũ và train lại"):
 # =========================
 if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     st.header("📘 Giới thiệu đề tài")
-    st.write(f"**Tên đề tài:** Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án bằng Random Forest nhằm hỗ trợ phát hiện sớm bệnh nhân có rủi ro cao")
+
+    st.write(f"**Tên đề tài:** {TITLE}")
     st.write(f"**{STUDENT_NAME}**")
     st.write(f"**{STUDENT_ID}**")
-    st.write(f"**Mô tả ngắn gọn giá trị thực tiễn:** {TOPIC_DESC}")
+    st.write(f"**Nguồn dữ liệu:** {DATA_SOURCE}")
+    st.write(f"**Giá trị thực tiễn:** {TOPIC_DESC}")
 
     st.header("📊 Khám phá dữ liệu (EDA)")
 
-    st.markdown("### 📋 Dữ liệu mẫu")
-    st.dataframe(df.head(10), width="stretch")
+    st.subheader("Dữ liệu mẫu")
+    st.dataframe(df.head(10), use_container_width=True)
 
     st.subheader("Kích thước dữ liệu")
     c1, c2 = st.columns(2)
@@ -330,14 +381,23 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     ax2.set_ylabel("Số lượng")
     st.pyplot(fig2)
 
+    st.subheader("Biểu đồ 3: Phân bố số ngày nằm viện")
+    fig3, ax3 = plt.subplots(figsize=(6, 4))
+    df["time_in_hospital"].dropna().hist(ax=ax3, bins=15)
+    ax3.set_title("Phân bố time_in_hospital")
+    ax3.set_xlabel("Số ngày nằm viện")
+    ax3.set_ylabel("Tần suất")
+    st.pyplot(fig3)
+
     st.subheader("Nhận xét dữ liệu")
-    st.write("""
-    Dữ liệu gồm nhiều đặc trưng liên quan đến hồ sơ bệnh án, thuốc điều trị và lịch sử thăm khám.
-    Sau khi chuyển đổi nhãn, bài toán trở thành phân loại nhị phân: có tái nhập viện và không tái nhập viện.
-    Dữ liệu có cả biến số và biến phân loại, do đó cần tiền xử lý bằng cách điền giá trị thiếu và mã hóa One-Hot Encoding.
-    Một số đặc trưng như số ngày nằm viện, số thuốc, số lần nhập viện trước đó và kết quả xét nghiệm được xem là có ảnh hưởng
-    đáng kể đến nguy cơ tái nhập viện.
-    """)
+    st.write(f"""
+- Bộ dữ liệu có **{df.shape[0]} dòng** và **{df.shape[1]} cột**.
+- Sau khi chuyển đổi nhãn, bài toán trở thành **phân loại nhị phân**.
+- Dữ liệu có hiện tượng **mất cân bằng lớp**, do số bệnh nhân không tái nhập viện thường lớn hơn nhóm tái nhập viện.
+- Dữ liệu gồm cả **biến số** và **biến phân loại**, vì vậy cần tiền xử lý khác nhau trước khi huấn luyện.
+- Một số đặc trưng được xem là quan trọng trong bài toán này gồm: **time_in_hospital, num_medications, number_inpatient, number_emergency, number_diagnoses, A1Cresult, insulin**.
+- Dữ liệu có chứa giá trị thiếu dưới dạng **"?"**, do đó cần được xử lý trước khi đưa vào mô hình.
+""")
 
 
 # =========================
@@ -346,7 +406,21 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
 elif page == "Trang 2: Triển khai mô hình":
     st.header("🛠️ Triển khai mô hình")
 
-    st.write("Người dùng nhập thông tin bệnh nhân để hệ thống dự đoán nguy cơ tái nhập viện.")
+    st.subheader("Mô tả mô hình")
+    st.write("""
+Quy trình xử lý:
+1. Người dùng nhập thông tin bệnh nhân.
+2. Dữ liệu đầu vào được chuẩn hóa kiểu dữ liệu giống lúc huấn luyện.
+3. Mô hình Random Forest đã huấn luyện trước sẽ được load từ file `.pkl`.
+4. Input được đưa qua pipeline gồm:
+   - xử lý giá trị thiếu
+   - mã hóa One-Hot cho biến phân loại
+   - dự đoán bằng Random Forest
+5. Hệ thống trả về:
+   - nhãn dự đoán
+   - xác suất bệnh nhân có nguy cơ tái nhập viện
+""")
+
     st.write(f"**Ngưỡng dự đoán đang dùng:** {best_threshold:.2f}")
 
     X_raw, _, cat_cols, num_cols, _ = prepare_data(df)
@@ -369,15 +443,13 @@ elif page == "Trang 2: Triển khai mô hình":
                     st.text_input(col, value="", disabled=True)
                 else:
                     default_index = 0
-                    if "None" in options:
-                        default_index = options.index("None")
                     input_data[col] = st.selectbox(col, options, index=default_index)
             else:
                 series = pd.to_numeric(X_raw[col], errors="coerce").dropna()
 
                 if series.empty:
                     input_data[col] = 0.0
-                    st.number_input(col, value=0.0, disabled=False)
+                    st.number_input(col, value=0.0)
                 else:
                     min_val = float(series.min())
                     max_val = float(series.max())
@@ -410,21 +482,29 @@ elif page == "Trang 2: Triển khai mô hình":
         if col in input_df.columns:
             input_df[col] = pd.to_numeric(input_df[col], errors="coerce")
 
-    st.subheader("Xử lý logic")
-    st.write("Dữ liệu đầu vào sẽ được tiền xử lý giống như lúc huấn luyện mô hình, sau đó đưa vào LightGBM để dự đoán.")
-    st.dataframe(input_df, width="stretch")
+    st.subheader("Dữ liệu đầu vào sau xử lý")
+    st.dataframe(input_df, use_container_width=True)
 
     if st.button("Dự đoán"):
         prob = pipeline.predict_proba(input_df)[0][1]
         pred = 1 if prob >= best_threshold else 0
 
+        if prob >= 0.7:
+            risk_level = "Nguy cơ cao"
+        elif prob >= 0.4:
+            risk_level = "Nguy cơ trung bình"
+        else:
+            risk_level = "Nguy cơ thấp"
+
         st.subheader("Kết quả dự đoán")
+
         if pred == 1:
             st.error("Kết luận: Bệnh nhân **có nguy cơ tái nhập viện**.")
         else:
             st.success("Kết luận: Bệnh nhân **có nguy cơ thấp**.")
 
-        st.info(f"Độ tin cậy / Xác suất dự đoán: **{prob:.4f}**")
+        st.info(f"Xác suất tái nhập viện: **{prob:.4f}**")
+        st.write(f"**Mức độ nguy cơ:** {risk_level}")
 
 
 # =========================
@@ -439,7 +519,7 @@ else:
     if use_auto:
         threshold = best_threshold
     else:
-        threshold = st.slider("Threshold", 0.10, 0.90, 0.45, 0.01)
+        threshold = st.slider("Threshold", 0.10, 0.90, 0.50, 0.01)
 
     y_pred = (y_prob >= threshold).astype(int)
 
@@ -460,37 +540,67 @@ else:
     st.subheader("Biểu đồ kỹ thuật: Confusion Matrix")
     cm = confusion_matrix(y_test, y_pred)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
-    ax.imshow(cm)
-    ax.set_title("Confusion Matrix")
-    ax.set_xlabel("Dự đoán")
-    ax.set_ylabel("Thực tế")
-    ax.set_xticks([0, 1])
-    ax.set_yticks([0, 1])
-    ax.set_xticklabels(["0", "1"])
-    ax.set_yticklabels(["0", "1"])
+    fig_cm, ax_cm = plt.subplots(figsize=(6, 5))
+    ax_cm.imshow(cm)
+    ax_cm.set_title("Confusion Matrix")
+    ax_cm.set_xlabel("Dự đoán")
+    ax_cm.set_ylabel("Thực tế")
+    ax_cm.set_xticks([0, 1])
+    ax_cm.set_yticks([0, 1])
+    ax_cm.set_xticklabels(["0", "1"])
+    ax_cm.set_yticklabels(["0", "1"])
 
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=14)
+            ax_cm.text(j, i, cm[i, j], ha="center", va="center", fontsize=14)
 
-    st.pyplot(fig)
+    st.pyplot(fig_cm)
+
+    st.subheader("ROC Curve")
+    fpr, tpr, _ = roc_curve(y_test, y_prob)
+
+    fig_roc, ax_roc = plt.subplots(figsize=(6, 4))
+    ax_roc.plot(fpr, tpr, label=f"AUC = {auc:.4f}")
+    ax_roc.plot([0, 1], [0, 1], linestyle="--")
+    ax_roc.set_xlabel("False Positive Rate")
+    ax_roc.set_ylabel("True Positive Rate")
+    ax_roc.set_title("ROC Curve")
+    ax_roc.legend()
+    st.pyplot(fig_roc)
 
     st.subheader("Báo cáo phân loại")
     st.text(classification_report(y_test, y_pred, zero_division=0))
 
+    st.subheader("Feature Importance")
+    fi_df = get_feature_importance(pipeline, feature_cols)
+
+    if not fi_df.empty:
+        top_fi = fi_df.head(10).sort_values(by="importance", ascending=True)
+        fig_fi, ax_fi = plt.subplots(figsize=(8, 5))
+        ax_fi.barh(top_fi["feature"], top_fi["importance"])
+        ax_fi.set_title("Top 10 đặc trưng quan trọng")
+        ax_fi.set_xlabel("Importance")
+        st.pyplot(fig_fi)
+    else:
+        st.warning("Không thể hiển thị feature importance.")
+
+    tn, fp, fn, tp = cm.ravel()
+
     st.subheader("Phân tích sai số và hướng cải thiện")
-    st.write(
-        f"""
-        Mô hình hiện tại đạt Accuracy = {acc:.4f}, Precision = {pre:.4f}, Recall = {rec:.4f}, F1-score = {f1:.4f}.
-        Kết quả cho thấy mô hình có khả năng nhận diện khá tốt các trường hợp tái nhập viện, đặc biệt Recall tương đối cao,
-        giúp giảm nguy cơ bỏ sót bệnh nhân cần theo dõi. Tuy nhiên Accuracy chưa quá cao do mô hình vẫn có một số dự đoán nhầm
-        giữa hai lớp. Trong tương lai, có thể cải thiện bằng cách bổ sung đặc trưng quan trọng hơn, thử thêm các thuật toán
-        khác như XGBoost/CatBoost hoặc tối ưu sâu hơn threshold và siêu tham số.
-        """
-    )
+    st.write(f"""
+- **False Positive (FP): {fp}** → mô hình dự đoán bệnh nhân có nguy cơ tái nhập viện nhưng thực tế không tái nhập viện.
+- **False Negative (FN): {fn}** → mô hình bỏ sót bệnh nhân có nguy cơ tái nhập viện. Đây là loại sai số cần hạn chế nhất trong bài toán y tế.
+- Mô hình hiện tại đạt **Accuracy = {acc:.4f}**, **Precision = {pre:.4f}**, **Recall = {rec:.4f}**, **F1-score = {f1:.4f}**, **ROC-AUC = {auc:.4f}**.
+- Recall càng cao thì mô hình càng phát hiện tốt các bệnh nhân có nguy cơ cao.
+- Precision phản ánh mức độ chính xác của các cảnh báo mà mô hình đưa ra.
+- Có thể cải thiện thêm bằng cách:
+  1. chọn thêm đặc trưng phù hợp,
+  2. xử lý mất cân bằng dữ liệu tốt hơn,
+  3. tối ưu siêu tham số sâu hơn,
+  4. điều chỉnh threshold phù hợp mục tiêu bài toán.
+""")
 
     with st.expander("Xem tham số tốt nhất của mô hình"):
         st.json(best_params)
 
-    st.write(f"Best CV F1-score trong quá trình tìm tham số: **{best_cv_f1:.4f}**")
+    st.write(f"**Best CV F1-score trong quá trình tìm tham số:** {best_cv_f1:.4f}")
