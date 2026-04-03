@@ -22,18 +22,35 @@ from sklearn.metrics import (
 )
 from lightgbm import LGBMClassifier
 
-st.set_page_config(page_title="LightGBM tối ưu", layout="wide")
-st.title("🚀 Phân loại tái nhập viện (LightGBM tối ưu)")
+st.set_page_config(page_title="Phân loại tái nhập viện", layout="wide")
+
+# =========================
+# CẤU HÌNH CHUNG
+# =========================
+TITLE = "Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường"
+STUDENT_NAME = "Họ tên sinh viên: Trần Quang Tiến"
+STUDENT_ID = "MSSV: 22T1020760"
+TOPIC_DESC = (
+    "Ứng dụng mô hình học máy để phân loại bệnh nhân có nguy cơ tái nhập viện "
+    "dựa trên dữ liệu bệnh án, từ đó hỗ trợ đánh giá mức độ rủi ro và giúp "
+    "ưu tiên theo dõi các trường hợp cần chú ý."
+)
 
 MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "lightgbm_best.pkl")
 
 
+# =========================
+# HÀM TẢI DỮ LIỆU
+# =========================
 @st.cache_data
 def load_data():
     return pd.read_csv("data/diabetic_data.csv")
 
 
+# =========================
+# TIỀN XỬ LÝ
+# =========================
 def prepare_data(df):
     data = df.copy()
     data = data.replace("?", np.nan)
@@ -41,7 +58,7 @@ def prepare_data(df):
     # 1 = có tái nhập viện, 0 = không tái nhập viện
     data["target"] = data["readmitted"].apply(lambda x: 0 if x == "NO" else 1)
 
-    # Bỏ cột không cần và cột dễ gây leakage
+    # Bỏ cột không cần và cột dễ leakage
     drop_cols = [
         "encounter_id",
         "patient_nbr",
@@ -54,7 +71,7 @@ def prepare_data(df):
     drop_cols = [c for c in drop_cols if c in data.columns]
     data = data.drop(columns=drop_cols)
 
-    # Chọn feature mạnh hơn để giảm nhiễu
+    # Chọn các feature mạnh hơn
     selected_features = [
         "race",
         "gender",
@@ -75,7 +92,6 @@ def prepare_data(df):
         "change",
         "diabetesMed"
     ]
-
     selected_features = [c for c in selected_features if c in data.columns]
 
     X = data[selected_features]
@@ -84,9 +100,12 @@ def prepare_data(df):
     cat_cols = X.select_dtypes(include=["object"]).columns.tolist()
     num_cols = X.select_dtypes(exclude=["object"]).columns.tolist()
 
-    return X, y, cat_cols, num_cols
+    return X, y, cat_cols, num_cols, data
 
 
+# =========================
+# TÌM THRESHOLD TỐI ƯU
+# =========================
 def find_best_threshold(y_true, y_prob):
     best_threshold = 0.5
     best_f1 = 0.0
@@ -101,11 +120,13 @@ def find_best_threshold(y_true, y_prob):
     return best_threshold, best_f1
 
 
+# =========================
+# TRAIN / LOAD MODEL
+# =========================
 @st.cache_resource
 def train_or_load_model(df):
-    X, y, cat_cols, num_cols = prepare_data(df)
+    X, y, cat_cols, num_cols, _ = prepare_data(df)
 
-    # Chia 3 tập: train / val / test
     X_train_full, X_test, y_train_full, y_test = train_test_split(
         X, y,
         test_size=0.2,
@@ -122,15 +143,16 @@ def train_or_load_model(df):
 
     if os.path.exists(MODEL_PATH):
         saved = joblib.load(MODEL_PATH)
-        return (
-            saved["pipeline"],
-            X_test,
-            y_test,
-            X,
-            saved["best_threshold"],
-            saved["best_params"],
-            saved["best_cv_f1"]
-        )
+        if all(k in saved for k in ["pipeline", "best_threshold", "best_params", "best_cv_f1"]):
+            return (
+                saved["pipeline"],
+                X_test,
+                y_test,
+                X,
+                saved["best_threshold"],
+                saved["best_params"],
+                saved["best_cv_f1"]
+            )
 
     num_pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="median"))
@@ -158,21 +180,21 @@ def train_or_load_model(df):
     ])
 
     param_grid = {
-        "model__n_estimators": [300, 500, 800, 1000],
+        "model__n_estimators": [300, 500, 800],
         "model__learning_rate": [0.03, 0.05, 0.07],
         "model__num_leaves": [31, 63, 127],
         "model__max_depth": [-1, 6, 8, 10],
         "model__min_child_samples": [10, 20, 30],
         "model__subsample": [0.8, 0.9, 1.0],
         "model__colsample_bytree": [0.8, 0.9, 1.0],
-        "model__reg_alpha": [0.0, 0.1, 0.2, 0.5],
-        "model__reg_lambda": [1, 2, 3, 5]
+        "model__reg_alpha": [0.0, 0.1, 0.2],
+        "model__reg_lambda": [1, 2, 3]
     }
 
     search = RandomizedSearchCV(
         estimator=pipeline,
         param_distributions=param_grid,
-        n_iter=20,
+        n_iter=15,
         scoring="f1",
         cv=3,
         random_state=42,
@@ -205,50 +227,90 @@ def reset_model():
     if os.path.exists(MODEL_DIR):
         shutil.rmtree(MODEL_DIR)
     st.cache_resource.clear()
-    st.success("Đã xóa model cũ. Hãy tải lại trang để train lại.")
+    st.success("Đã xóa model cũ. Tải lại trang để train lại.")
 
 
+# =========================
+# LOAD
+# =========================
 df = load_data()
 pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1 = train_or_load_model(df)
 
+st.title("🚀 HƯỚNG DẪN XÂY DỰNG ỨNG DỤNG MACHINE LEARNING VỚI STREAMLIT")
+st.subheader(TITLE)
+
 page = st.sidebar.radio("Chọn trang", [
-    "Trang 1: EDA",
-    "Trang 2: Dự đoán",
-    "Trang 3: Đánh giá"
+    "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)",
+    "Trang 2: Triển khai mô hình",
+    "Trang 3: Đánh giá & Hiệu năng"
 ])
 
 st.sidebar.markdown("---")
 if st.sidebar.button("Xóa model cũ và train lại"):
     reset_model()
 
-if page == "Trang 1: EDA":
-    st.header("📊 Khám phá dữ liệu")
 
-    st.subheader("5 dòng đầu")
-    st.dataframe(df.head())
+# =========================
+# TRANG 1
+# =========================
+if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
+    st.header("📘 Giới thiệu đề tài")
+    st.write(f"**Tên đề tài:** {TITLE}")
+    st.write(f"**{STUDENT_NAME}**")
+    st.write(f"**{STUDENT_ID}**")
+    st.write(f"**Mô tả ngắn gọn giá trị thực tiễn:** {TOPIC_DESC}")
+
+    st.header("📊 Khám phá dữ liệu (EDA)")
+
+    st.subheader("Một phần dữ liệu thô")
+    st.dataframe(df.head(10))
 
     st.subheader("Kích thước dữ liệu")
-    st.write(f"Số dòng: {df.shape[0]}")
-    st.write(f"Số cột: {df.shape[1]}")
+    c1, c2 = st.columns(2)
+    c1.metric("Số dòng", df.shape[0])
+    c2.metric("Số cột", df.shape[1])
 
-    st.subheader("Phân bố readmitted")
-    fig, ax = plt.subplots(figsize=(6, 4))
-    df["readmitted"].value_counts().plot(kind="bar", ax=ax)
-    ax.set_title("Phân bố readmitted")
-    ax.set_xlabel("Nhóm")
-    ax.set_ylabel("Số lượng")
-    st.pyplot(fig)
+    st.subheader("Biểu đồ 1: Phân bố nhãn readmitted")
+    fig1, ax1 = plt.subplots(figsize=(6, 4))
+    df["readmitted"].value_counts().plot(kind="bar", ax=ax1)
+    ax1.set_title("Phân bố biến readmitted")
+    ax1.set_xlabel("Nhóm")
+    ax1.set_ylabel("Số lượng")
+    st.pyplot(fig1)
 
-    st.subheader("Tỷ lệ mục tiêu sau khi đổi nhãn")
-    target_counts = pd.Series(df["readmitted"].apply(lambda x: 0 if x == "NO" else 1)).value_counts()
-    st.write("0 = Không tái nhập viện, 1 = Có tái nhập viện")
-    st.write(target_counts)
+    st.subheader("Biểu đồ 2: Phân bố biến mục tiêu sau khi đổi nhãn")
+    target_series = df["readmitted"].apply(lambda x: 0 if x == "NO" else 1)
+    fig2, ax2 = plt.subplots(figsize=(6, 4))
+    target_series.value_counts().sort_index().plot(kind="bar", ax=ax2)
+    ax2.set_title("Phân bố target (0 = Không tái nhập viện, 1 = Có tái nhập viện)")
+    ax2.set_xlabel("Target")
+    ax2.set_ylabel("Số lượng")
+    st.pyplot(fig2)
 
-elif page == "Trang 2: Dự đoán":
-    st.header("🔮 Dự đoán")
+    st.subheader("Nhận xét dữ liệu")
+    st.write(
+        """
+        Dữ liệu gồm nhiều đặc trưng liên quan đến hồ sơ bệnh án, thuốc điều trị và lịch sử thăm khám.
+        Sau khi chuyển đổi nhãn, bài toán trở thành phân loại nhị phân: có tái nhập viện và không tái nhập viện.
+        Dữ liệu có cả biến số và biến phân loại, do đó cần tiền xử lý bằng cách điền giá trị thiếu và mã hóa One-Hot Encoding.
+        Một số đặc trưng như số ngày nằm viện, số thuốc, số lần nhập viện trước đó và kết quả xét nghiệm được xem là có ảnh hưởng
+        đáng kể đến nguy cơ tái nhập viện.
+        """
+    )
 
-    X_raw, _, _, _ = prepare_data(df)
 
+# =========================
+# TRANG 2
+# =========================
+elif page == "Trang 2: Triển khai mô hình":
+    st.header("🛠️ Triển khai mô hình")
+
+    st.write("Người dùng nhập thông tin bệnh nhân để hệ thống dự đoán nguy cơ tái nhập viện.")
+    st.write(f"**Ngưỡng dự đoán đang dùng:** {best_threshold:.2f}")
+
+    X_raw, _, _, _, _ = prepare_data(df)
+
+    st.subheader("Thiết kế giao diện nhập liệu")
     input_data = {}
     col1, col2 = st.columns(2)
     columns = X_raw.columns.tolist()
@@ -271,32 +333,31 @@ elif page == "Trang 2: Dự đoán":
 
     input_df = pd.DataFrame([input_data])
 
-    st.write(f"Ngưỡng tối ưu theo F1: **{best_threshold:.2f}**")
+    st.subheader("Xử lý logic")
+    st.write("Dữ liệu đầu vào sẽ được tiền xử lý giống như lúc huấn luyện mô hình, sau đó đưa vào LightGBM để dự đoán.")
 
     if st.button("Dự đoán"):
         prob = pipeline.predict_proba(input_df)[0][1]
         pred = 1 if prob >= best_threshold else 0
 
-        st.write(f"Xác suất tái nhập viện: **{prob:.4f}**")
-
+        st.subheader("Kết quả dự đoán")
         if pred == 1:
-            st.error("Kết luận: Có nguy cơ tái nhập viện")
+            st.error("Kết luận: Bệnh nhân **có nguy cơ tái nhập viện**.")
         else:
-            st.success("Kết luận: Nguy cơ thấp")
+            st.success("Kết luận: Bệnh nhân **có nguy cơ thấp**.")
 
+        st.info(f"Độ tin cậy / Xác suất dự đoán: **{prob:.4f}**")
+
+
+# =========================
+# TRANG 3
+# =========================
 else:
-    st.header("📈 Đánh giá LightGBM")
+    st.header("📈 Đánh giá & Hiệu năng")
 
     y_prob = pipeline.predict_proba(X_test)[:, 1]
 
-    st.write(f"Best threshold tìm được: **{best_threshold:.2f}**")
-    st.write(f"Best CV F1-score: **{best_cv_f1:.4f}**")
-
-    with st.expander("Xem tham số tốt nhất"):
-        st.json(best_params)
-
     use_auto = st.checkbox("Dùng threshold tối ưu", value=True)
-
     if use_auto:
         threshold = best_threshold
     else:
@@ -310,6 +371,7 @@ else:
     f1 = f1_score(y_test, y_pred, zero_division=0)
     auc = roc_auc_score(y_test, y_prob)
 
+    st.subheader("Các chỉ số đo lường")
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Accuracy", f"{acc:.4f}")
     c2.metric("Precision", f"{pre:.4f}")
@@ -317,7 +379,7 @@ else:
     c4.metric("F1-score", f"{f1:.4f}")
     c5.metric("ROC-AUC", f"{auc:.4f}")
 
-    st.subheader("Confusion Matrix")
+    st.subheader("Biểu đồ kỹ thuật: Confusion Matrix")
     cm = confusion_matrix(y_test, y_pred)
 
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -338,3 +400,20 @@ else:
 
     st.subheader("Báo cáo phân loại")
     st.text(classification_report(y_test, y_pred, zero_division=0))
+
+    st.subheader("Phân tích sai số và hướng cải thiện")
+    st.write(
+        f"""
+        Mô hình hiện tại đạt Accuracy = {acc:.4f}, Precision = {pre:.4f}, Recall = {rec:.4f}, F1-score = {f1:.4f}.
+        Kết quả cho thấy mô hình có khả năng nhận diện khá tốt các trường hợp tái nhập viện, đặc biệt Recall tương đối cao,
+        giúp giảm nguy cơ bỏ sót bệnh nhân cần theo dõi. Tuy nhiên Accuracy chưa quá cao do mô hình vẫn có một số dự đoán nhầm
+        giữa hai lớp. Trong tương lai, có thể cải thiện bằng cách bổ sung đặc trưng quan trọng hơn, thử thêm các thuật toán
+        khác như XGBoost/CatBoost hoặc tối ưu sâu hơn threshold và siêu tham số.
+        """
+
+    )
+
+    with st.expander("Xem tham số tốt nhất của mô hình"):
+        st.json(best_params)
+
+    st.write(f"Best CV F1-score trong quá trình tìm tham số: **{best_cv_f1:.4f}**")
