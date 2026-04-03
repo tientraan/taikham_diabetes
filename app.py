@@ -462,4 +462,4 @@ else:
     with st.expander("Xem tham số tốt nhất của mô hình"):
         st.json(best_params)
 
-    st.write(f"Best CV F1-score trong quá trình tìm tham số: **{best_cv_f1:.4f}**")
+    st.write(f"Best CV F1-score trong quá trình tìm tham số : **{best_cv_f1:.4f}**")
