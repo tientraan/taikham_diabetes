@@ -116,11 +116,11 @@ st.markdown("""
 # =========================================================
 # THÔNG TIN ĐỀ TÀI
 # =========================================================
-TITLE = "Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án"
+TITLE = "Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án bằng Light Gradient Boosting Machine nhằm hỗ trợ phát hiện sớm bệnh nhân có rủi ro cao"
 STUDENT_NAME = "Trần Quang Tiến"
 STUDENT_ID = "22T1020760"
 TOPIC_DESC = (
-    "Ứng dụng hỗ trợ phân loại bệnh nhân có nguy cơ tái nhập viện dựa trên dữ liệu bệnh án, "
+    "Hỗ trợ phân loại bệnh nhân có nguy cơ tái nhập viện dựa trên dữ liệu bệnh án, "
     "giúp sàng lọc sớm các trường hợp rủi ro cao để ưu tiên theo dõi và hỗ trợ quyết định."
 )
 
