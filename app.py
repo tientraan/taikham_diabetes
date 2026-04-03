@@ -273,7 +273,7 @@ st.markdown("""
 🚀 ỨNG DỤNG MACHINE LEARNING
 </h1>
 <h3 style='text-align: center; color: gray;'>
-Phân loại nguy cơ tái nhập viện bệnh nhân tiểu đường
+Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án bằng Random Forest nhằm hỗ trợ phát hiện sớm bệnh nhân có rủi ro cao
 </h3>
 <hr>
 """, unsafe_allow_html=True)
