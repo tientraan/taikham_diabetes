@@ -270,7 +270,8 @@ pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1, featu
 
 st.markdown("""
 <h1  color: #2c3e50;'>
-🚀 ỨNG DỤNG MACHINE LEARNING
+🚀 Phân loại bênh nhân tái nhập viện
+
 </h1>
 
 <hr>
