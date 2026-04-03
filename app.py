@@ -30,132 +30,120 @@ st.set_page_config(page_title="Phân loại tái nhập viện", layout="wide")
 st.markdown("""
 <style>
     .main {
-        background: #f8fafc;
+        background-color: #f6f8fb;
     }
 
     .block-container {
-        max-width: 1180px;
-        padding-top: 1.2rem;
+        padding-top: 1.5rem;
         padding-bottom: 2rem;
+        max-width: 1200px;
     }
 
     h1, h2, h3 {
-        color: #0f172a;
-        letter-spacing: -0.3px;
+        color: #1f2937;
     }
 
-    .app-title {
+    .big-title {
         text-align: center;
-        font-size: 38px;
+        font-size: 42px;
         font-weight: 800;
-        color: #0f172a;
+        color: #1f2937;
         margin-bottom: 0.2rem;
     }
 
-    .app-subtitle {
+    .sub-title {
         text-align: center;
-        font-size: 18px;
-        color: #64748b;
-        margin-bottom: 1rem;
+        font-size: 20px;
+        color: #6b7280;
+        margin-bottom: 1.2rem;
     }
 
-    .card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        padding: 20px 22px;
-        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+    .section-card {
+        background: white;
+        padding: 18px 22px;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
         margin-bottom: 18px;
     }
 
-    .note-blue {
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        color: #1e3a8a;
+    .info-box {
+        background: #eef6ff;
+        border-left: 6px solid #2563eb;
         padding: 14px 16px;
-        border-radius: 14px;
-        margin-top: 8px;
-        line-height: 1.6;
+        border-radius: 12px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
-    .note-green {
+    .success-box {
         background: #ecfdf5;
-        border: 1px solid #bbf7d0;
-        color: #166534;
+        border-left: 6px solid #10b981;
         padding: 14px 16px;
-        border-radius: 14px;
-        margin-top: 8px;
-        line-height: 1.6;
+        border-radius: 12px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
-    .note-orange {
+    .warn-box {
         background: #fff7ed;
-        border: 1px solid #fed7aa;
-        color: #9a3412;
+        border-left: 6px solid #f97316;
         padding: 14px 16px;
+        border-radius: 12px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .metric-card {
+        background: white;
+        padding: 16px;
         border-radius: 14px;
-        margin-top: 8px;
-        line-height: 1.6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        text-align: center;
     }
 
     div[data-testid="stMetric"] {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 10px;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-    }
-
-    div[data-testid="stMetricLabel"] {
-        justify-content: center;
-    }
-
-    div[data-testid="stMetricValue"] {
-        justify-content: center;
+        background: white;
+        border: 1px solid #e5e7eb;
+        padding: 12px;
+        border-radius: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     .stButton > button {
         width: 100%;
+        border-radius: 10px;
         height: 44px;
-        border-radius: 12px;
-        border: none;
-        background: #2563eb;
+        background-color: #2563eb;
         color: white;
-        font-weight: 700;
+        font-weight: 600;
+        border: none;
     }
 
     .stButton > button:hover {
-        background: #1d4ed8;
+        background-color: #1d4ed8;
         color: white;
     }
 
     section[data-testid="stSidebar"] {
         background: #ffffff;
-        border-right: 1px solid #e2e8f0;
+        border-right: 1px solid #e5e7eb;
     }
 
     .sidebar-title {
-        font-size: 24px;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 10px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 8px;
     }
 
-    .sidebar-note {
-        font-size: 14px;
-        color: #64748b;
-        line-height: 1.5;
-    }
-
-    .small-muted {
-        color: #64748b;
+    .small-note {
+        color: #6b7280;
         font-size: 14px;
     }
 
     hr {
-        margin: 0.7rem 0 1rem 0;
-        border: none;
-        border-top: 1px solid #e2e8f0;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -373,47 +361,41 @@ pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1 = trai
 # HEADER
 # =========================
 st.markdown(f"""
-<div class="app-title">🏥 Ứng dụng phân loại tái nhập viện</div>
-<div class="app-subtitle">{TITLE}</div>
+<div class="big-title">🚀 ỨNG DỤNG MACHINE LEARNING VỚI STREAMLIT</div>
+<div class="sub-title">{TITLE}</div>
 <hr>
 """, unsafe_allow_html=True)
 
 # =========================
 # SIDEBAR
 # =========================
-st.sidebar.markdown('<div class="sidebar-title">📂 Menu</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="sidebar-title">📂 Chọn trang</div>', unsafe_allow_html=True)
 
 page = st.sidebar.radio("", [
-    "Trang 1: Giới thiệu & EDA",
-    "Trang 2: Dự đoán",
-    "Trang 3: Đánh giá"
+    "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)",
+    "Trang 2: Triển khai mô hình",
+    "Trang 3: Đánh giá & Hiệu năng"
 ])
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(
-    '<div class="sidebar-note">Bấm nút bên dưới nếu muốn xóa mô hình cũ và huấn luyện lại theo code mới.</div>',
-    unsafe_allow_html=True
-)
-
+st.sidebar.markdown('<div class="small-note">Reset khi muốn huấn luyện lại mô hình theo code mới.</div>', unsafe_allow_html=True)
 if st.sidebar.button("🗑️ Xóa model cũ và train lại"):
     reset_model()
+
 
 # =========================
 # TRANG 1
 # =========================
-if page == "Trang 1: Giới thiệu & EDA":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.header("📘 Giới thiệu đề tài")
     st.write(f"**Tên đề tài:** {TITLE}")
     st.write(f"**{STUDENT_NAME}**")
     st.write(f"**{STUDENT_ID}**")
-    st.markdown(
-        f'<div class="note-blue"><b>Mô tả giá trị thực tiễn:</b> {TOPIC_DESC}</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown(f'<div class="info-box"><b>Mô tả giá trị thực tiễn:</b> {TOPIC_DESC}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.header("📊 Khám phá dữ liệu")
     st.markdown("### 📋 Một phần dữ liệu thô")
     st.dataframe(df.head(10), use_container_width=True)
@@ -423,40 +405,36 @@ if page == "Trang 1: Giới thiệu & EDA":
     c2.metric("Số cột", df.shape[1])
     st.markdown('</div>', unsafe_allow_html=True)
 
-    left, right = st.columns(2)
+    c3, c4 = st.columns(2)
 
-    with left:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    with c3:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown("### 📈 Biểu đồ 1: Phân bố nhãn readmitted")
         fig1, ax1 = plt.subplots(figsize=(5, 4))
-        df["readmitted"].value_counts().plot(kind="bar", ax=ax1, color="#3b82f6")
+        df["readmitted"].value_counts().plot(kind="bar", ax=ax1)
         ax1.set_title("Phân bố biến readmitted")
         ax1.set_xlabel("Nhóm")
         ax1.set_ylabel("Số lượng")
-        for spine in ax1.spines.values():
-            spine.set_visible(False)
         st.pyplot(fig1)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with right:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    with c4:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown("### 📊 Biểu đồ 2: Phân bố biến mục tiêu")
         target_series = df["readmitted"].apply(lambda x: 0 if x == "NO" else 1)
         fig2, ax2 = plt.subplots(figsize=(5, 4))
-        target_series.value_counts().sort_index().plot(kind="bar", ax=ax2, color="#10b981")
+        target_series.value_counts().sort_index().plot(kind="bar", ax=ax2)
         ax2.set_title("Target (0 = Không tái nhập viện, 1 = Có tái nhập viện)")
         ax2.set_xlabel("Target")
         ax2.set_ylabel("Số lượng")
-        for spine in ax2.spines.values():
-            spine.set_visible(False)
         st.pyplot(fig2)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### 🧠 Giải thích và nhận xét")
     st.markdown(
         """
-        <div class="note-green">
+        <div class="success-box">
         Dữ liệu gồm nhiều đặc trưng liên quan đến hồ sơ bệnh án, thuốc điều trị và lịch sử thăm khám.
         Sau khi đổi nhãn, bài toán trở thành phân loại nhị phân: có tái nhập viện và không tái nhập viện.
         Dữ liệu có cả biến số và biến phân loại nên cần điền giá trị thiếu và mã hóa One-Hot Encoding.
@@ -468,22 +446,20 @@ if page == "Trang 1: Giới thiệu & EDA":
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
+
 # =========================
 # TRANG 2
 # =========================
-elif page == "Trang 2: Dự đoán":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+elif page == "Trang 2: Triển khai mô hình":
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.header("🛠️ Triển khai mô hình")
-    st.markdown(
-        f'<div class="note-blue">Ngưỡng dự đoán hiện tại: <b>{best_threshold:.2f}</b></div>',
-        unsafe_allow_html=True
-    )
+    st.markdown(f'<div class="info-box">Ngưỡng dự đoán hiện tại: <b>{best_threshold:.2f}</b></div>', unsafe_allow_html=True)
     st.write("Người dùng nhập thông tin bệnh nhân để mô hình dự đoán nguy cơ tái nhập viện.")
     st.markdown('</div>', unsafe_allow_html=True)
 
     X_raw, _, _, _, _ = prepare_data(df)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### 🧾 Thiết kế giao diện nhập liệu")
 
     input_data = {}
@@ -508,7 +484,7 @@ elif page == "Trang 2: Dự đoán":
     input_df = pd.DataFrame([input_data])
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### ⚙️ Xử lý logic")
     st.write("Dữ liệu đầu vào sẽ được tiền xử lý giống như lúc huấn luyện, sau đó đưa vào mô hình LightGBM để dự đoán xác suất tái nhập viện.")
 
@@ -519,15 +495,17 @@ elif page == "Trang 2: Dự đoán":
         st.markdown("### 🎯 Kết quả dự đoán")
         if pred == 1:
             st.markdown(
-                f'<div class="note-orange"><b>Kết luận:</b> Bệnh nhân có nguy cơ tái nhập viện.<br><b>Xác suất dự đoán:</b> {prob:.4f}</div>',
+                f'<div class="warn-box"><b>Kết luận:</b> Bệnh nhân có nguy cơ tái nhập viện.<br><b>Xác suất dự đoán:</b> {prob:.4f}</div>',
                 unsafe_allow_html=True
             )
         else:
             st.markdown(
-                f'<div class="note-green"><b>Kết luận:</b> Bệnh nhân có nguy cơ thấp.<br><b>Xác suất dự đoán:</b> {prob:.4f}</div>',
+                f'<div class="success-box"><b>Kết luận:</b> Bệnh nhân có nguy cơ thấp.<br><b>Xác suất dự đoán:</b> {prob:.4f}</div>',
                 unsafe_allow_html=True
             )
+
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # =========================
 # TRANG 3
@@ -535,7 +513,7 @@ elif page == "Trang 2: Dự đoán":
 else:
     y_prob = pipeline.predict_proba(X_test)[:, 1]
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.header("📈 Đánh giá & Hiệu năng")
 
     use_auto = st.checkbox("Dùng threshold tối ưu", value=True)
@@ -561,63 +539,47 @@ else:
     m5.metric("ROC-AUC", f"{auc:.4f}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    left, right = st.columns([1.1, 0.9])
+    c1, c2 = st.columns([1.1, 1])
 
-    with left:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    with c1:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown("### 🧩 Confusion Matrix")
-
         cm = confusion_matrix(y_test, y_pred)
 
-        fig, ax = plt.subplots(figsize=(5.8, 4.8))
-        im = ax.imshow(cm, cmap="Blues")
-
-        ax.set_title("Confusion Matrix", fontsize=18, pad=10)
-        ax.set_xlabel("Dự đoán", fontsize=13)
-        ax.set_ylabel("Thực tế", fontsize=13)
+        fig, ax = plt.subplots(figsize=(6, 5))
+        im = ax.imshow(cm)
+        ax.set_title("Confusion Matrix")
+        ax.set_xlabel("Dự đoán")
+        ax.set_ylabel("Thực tế")
         ax.set_xticks([0, 1])
         ax.set_yticks([0, 1])
-        ax.set_xticklabels(["0", "1"], fontsize=12)
-        ax.set_yticklabels(["0", "1"], fontsize=12)
+        ax.set_xticklabels(["0", "1"])
+        ax.set_yticklabels(["0", "1"])
 
         for i in range(cm.shape[0]):
             for j in range(cm.shape[1]):
-                ax.text(
-                    j, i, f"{cm[i, j]}",
-                    ha="center", va="center",
-                    fontsize=17, fontweight="bold",
-                    color="white" if cm[i, j] > cm.max() / 2 else "#111827"
-                )
+                ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=14, color="black")
 
-        for spine in ax.spines.values():
-            spine.set_visible(False)
-
-        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        cbar.outline.set_visible(False)
-
-        plt.tight_layout()
         st.pyplot(fig)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with right:
-        report = classification_report(y_test, y_pred, zero_division=0, output_dict=True)
-        report_df = pd.DataFrame(report).transpose().round(3)
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown("### 📄 Báo cáo phân loại")
-        st.dataframe(report_df, use_container_width=True)
+        st.text(classification_report(y_test, y_pred, zero_division=0))
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### 🧠 Phân tích sai số và hướng cải thiện")
     st.markdown(
         f"""
-        <div class="note-blue">
+        <div class="info-box">
         Mô hình hiện tại đạt <b>Accuracy = {acc:.4f}</b>, <b>Precision = {pre:.4f}</b>,
-        <b>Recall = {rec:.4f}</b>, <b>F1-score = {f1:.4f}</b>. Kết quả cho thấy mô hình
-        nhận diện khá tốt các trường hợp tái nhập viện, đặc biệt Recall cao giúp hạn chế
-        bỏ sót bệnh nhân cần theo dõi. Tuy nhiên Accuracy chưa cao do vẫn còn dự đoán nhầm giữa hai lớp.
-        Có thể cải thiện thêm bằng cách bổ sung đặc trưng, thử XGBoost/CatBoost hoặc tinh chỉnh threshold sâu hơn.
+        <b>Recall = {rec:.4f}</b>, <b>F1-score = {f1:.4f}</b>. Kết quả cho thấy mô hình có khả năng
+        nhận diện khá tốt các trường hợp tái nhập viện, đặc biệt Recall tương đối cao giúp giảm nguy cơ bỏ sót
+        bệnh nhân cần theo dõi. Tuy nhiên Accuracy chưa quá cao do mô hình vẫn còn một số dự đoán nhầm giữa hai lớp.
+        Trong tương lai có thể cải thiện bằng cách bổ sung đặc trưng quan trọng hơn, thử thêm các mô hình khác như
+        XGBoost hoặc CatBoost, hay tối ưu sâu hơn threshold và siêu tham số.
         </div>
         """,
         unsafe_allow_html=True
@@ -626,8 +588,5 @@ else:
     with st.expander("Xem tham số tốt nhất của mô hình"):
         st.json(best_params)
 
-    st.markdown(
-        f'<div class="small-muted">Best CV F1-score trong quá trình tìm tham số: <b>{best_cv_f1:.4f}</b></div>',
-        unsafe_allow_html=True
-    )
+    st.markdown(f'<div class="small-note">Best CV F1-score trong quá trình tìm tham số: <b>{best_cv_f1:.4f}</b></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
