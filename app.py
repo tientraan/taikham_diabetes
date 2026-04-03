@@ -273,7 +273,7 @@ st.markdown("""
 🚀 ỨNG DỤNG MACHINE LEARNING
 </h1>
 <h3 style='text-align: center; color: gray;'>
-Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án bằng Random Forest nhằm hỗ trợ phát hiện sớm bệnh nhân có rủi ro cao
+Phân loại nguy cơ tái nhập viện bệnh nhân tiểu đường
 </h3>
 <hr>
 """, unsafe_allow_html=True)
@@ -299,7 +299,7 @@ if st.sidebar.button("Xóa model cũ và train lại"):
 # =========================
 if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     st.header("📘 Giới thiệu đề tài")
-    st.write(f"**Tên đề tài:** {TITLE}")
+    st.write(f"**Tên đề tài:** Phân loại nguy cơ tái nhập viện của bệnh nhân tiểu đường dựa trên dữ liệu bệnh án bằng Random Forest nhằm hỗ trợ phát hiện sớm bệnh nhân có rủi ro cao")
     st.write(f"**{STUDENT_NAME}**")
     st.write(f"**{STUDENT_ID}**")
     st.write(f"**Mô tả ngắn gọn giá trị thực tiễn:** {TOPIC_DESC}")
