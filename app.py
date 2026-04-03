@@ -272,9 +272,7 @@ st.markdown("""
 <h1  color: #2c3e50;'>
 🚀 ỨNG DỤNG MACHINE LEARNING
 </h1>
-<h3 color: gray;'>
-Phân loại nguy cơ tái nhập viện bệnh nhân tiểu đường
-</h3>
+
 <hr>
 """, unsafe_allow_html=True)
 
