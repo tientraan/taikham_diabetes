@@ -468,42 +468,18 @@ elif page == "Trang 2: Triển khai mô hình":
 
     for i, col in enumerate(columns):
         target_col = col1 if i % 2 == 0 else col2
-
-    with target_col:
-        series = X_raw[col]
-
-        # Nếu là cột object hoặc category thì dùng selectbox
-        if series.dtype == "object" or str(series.dtype) == "category":
-            options = series.dropna().astype(str).unique().tolist()
-            options = sorted(options)
-
-            if len(options) == 0:
-                options = ["Không xác định"]
-
-            input_data[col] = st.selectbox(col, options)
-
-        else:
-            # Ép an toàn sang numeric
-            numeric_series = pd.to_numeric(series, errors="coerce").dropna()
-
-            # Nếu cột numeric nhưng rỗng sau khi ép kiểu
-            if numeric_series.empty:
-                input_data[col] = st.number_input(col, value=0.0)
+        with target_col:
+            if X_raw[col].dtype == "object":
+                options = X_raw[col].dropna().astype(str).unique().tolist()
+                options = sorted(options)
+                input_data[col] = st.selectbox(col, options)
             else:
-                min_val = float(numeric_series.min())
-                max_val = float(numeric_series.max())
-                median_val = float(numeric_series.median())
-
-                # Tránh lỗi khi min=max
-                if min_val == max_val:
-                    input_data[col] = st.number_input(col, value=median_val)
-                else:
-                    input_data[col] = st.number_input(
-                        col,
-                        min_value=min_val,
-                        max_value=max_val,
-                        value=median_val
-                    )
+                input_data[col] = st.number_input(
+                    col,
+                    min_value=float(X_raw[col].min()),
+                    max_value=float(X_raw[col].max()),
+                    value=float(X_raw[col].median())
+                )
 
     input_df = pd.DataFrame([input_data])
     st.markdown('</div>', unsafe_allow_html=True)
