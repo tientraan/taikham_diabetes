@@ -23,45 +23,39 @@ from sklearn.metrics import (
 from lightgbm import LGBMClassifier
 
 st.set_page_config(page_title="Phân loại tái nhập viện", layout="wide")
+
 st.markdown("""
 <style>
 .main {
     background-color: #f5f7fa;
 }
-
 h1, h2, h3 {
     color: #2c3e50;
 }
-
 .stMetric {
     background-color: white;
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
-
 .block-container {
     padding-top: 2rem;
 }
-
-.sidebar .sidebar-content {
-    background-color: #2c3e50;
-    color: white;
-}
-
-.stButton>button {
+.stButton > button {
     background-color: #3498db;
     color: white;
     border-radius: 8px;
     height: 3em;
     width: 100%;
+    border: none;
 }
-
-.stButton>button:hover {
+.stButton > button:hover {
     background-color: #2980b9;
+    color: white;
 }
 </style>
 """, unsafe_allow_html=True)
+
 # =========================
 # CẤU HÌNH CHUNG
 # =========================
@@ -93,10 +87,8 @@ def prepare_data(df):
     data = df.copy()
     data = data.replace("?", np.nan)
 
-    # 1 = có tái nhập viện, 0 = không tái nhập viện
     data["target"] = data["readmitted"].apply(lambda x: 0 if x == "NO" else 1)
 
-    # Bỏ cột không cần và cột dễ leakage
     drop_cols = [
         "encounter_id",
         "patient_nbr",
@@ -109,7 +101,6 @@ def prepare_data(df):
     drop_cols = [c for c in drop_cols if c in data.columns]
     data = data.drop(columns=drop_cols)
 
-    # Chọn các feature mạnh hơn
     selected_features = [
         "race",
         "gender",
@@ -132,11 +123,11 @@ def prepare_data(df):
     ]
     selected_features = [c for c in selected_features if c in data.columns]
 
-    X = data[selected_features]
-    y = data["target"]
+    X = data[selected_features].copy()
+    y = data["target"].copy()
 
-    cat_cols = X.select_dtypes(include=["object"]).columns.tolist()
-    num_cols = X.select_dtypes(exclude=["object"]).columns.tolist()
+    cat_cols = X.select_dtypes(include=["object", "string", "category"]).columns.tolist()
+    num_cols = [c for c in X.columns if c not in cat_cols]
 
     return X, y, cat_cols, num_cols, data
 
@@ -181,7 +172,8 @@ def train_or_load_model(df):
 
     if os.path.exists(MODEL_PATH):
         saved = joblib.load(MODEL_PATH)
-        if all(k in saved for k in ["pipeline", "best_threshold", "best_params", "best_cv_f1"]):
+        required_keys = ["pipeline", "best_threshold", "best_params", "best_cv_f1", "feature_cols"]
+        if all(k in saved for k in required_keys):
             return (
                 saved["pipeline"],
                 X_test,
@@ -189,7 +181,8 @@ def train_or_load_model(df):
                 X,
                 saved["best_threshold"],
                 saved["best_params"],
-                saved["best_cv_f1"]
+                saved["best_cv_f1"],
+                saved["feature_cols"]
             )
 
     num_pipeline = Pipeline([
@@ -212,7 +205,7 @@ def train_or_load_model(df):
             objective="binary",
             class_weight="balanced",
             random_state=42,
-            n_jobs=-1,
+            n_jobs=1,
             verbose=-1
         ))
     ])
@@ -236,7 +229,7 @@ def train_or_load_model(df):
         scoring="f1",
         cv=3,
         random_state=42,
-        n_jobs=-1,
+        n_jobs=1,
         verbose=1
     )
 
@@ -253,12 +246,13 @@ def train_or_load_model(df):
             "best_threshold": best_threshold,
             "best_params": search.best_params_,
             "best_cv_f1": search.best_score_,
-            "best_val_f1": best_val_f1
+            "best_val_f1": best_val_f1,
+            "feature_cols": X.columns.tolist()
         },
         MODEL_PATH
     )
 
-    return best_pipeline, X_test, y_test, X, best_threshold, search.best_params_, search.best_score_
+    return best_pipeline, X_test, y_test, X, best_threshold, search.best_params_, search.best_score_, X.columns.tolist()
 
 
 def reset_model():
@@ -272,7 +266,7 @@ def reset_model():
 # LOAD
 # =========================
 df = load_data()
-pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1 = train_or_load_model(df)
+pipeline, X_test, y_test, X_full, best_threshold, best_params, best_cv_f1, feature_cols = train_or_load_model(df)
 
 st.markdown("""
 <h1 style='text-align: center; color: #2c3e50;'>
@@ -283,13 +277,17 @@ Phân loại nguy cơ tái nhập viện bệnh nhân tiểu đường
 </h3>
 <hr>
 """, unsafe_allow_html=True)
+
 st.subheader(TITLE)
 
-page = st.sidebar.radio("Chọn trang", [
-    "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)",
-    "Trang 2: Triển khai mô hình",
-    "Trang 3: Đánh giá & Hiệu năng"
-])
+page = st.sidebar.radio(
+    "Chọn trang",
+    [
+        "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)",
+        "Trang 2: Triển khai mô hình",
+        "Trang 3: Đánh giá & Hiệu năng"
+    ]
+)
 
 st.sidebar.markdown("---")
 if st.sidebar.button("Xóa model cũ và train lại"):
@@ -309,7 +307,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     st.header("📊 Khám phá dữ liệu (EDA)")
 
     st.markdown("### 📋 Dữ liệu mẫu")
-    st.dataframe(df.head(10), use_container_width=True)
+    st.dataframe(df.head(10), width="stretch")
 
     st.subheader("Kích thước dữ liệu")
     c1, c2 = st.columns(2)
@@ -334,15 +332,13 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     st.pyplot(fig2)
 
     st.subheader("Nhận xét dữ liệu")
-    st.write(
-        """
-        Dữ liệu gồm nhiều đặc trưng liên quan đến hồ sơ bệnh án, thuốc điều trị và lịch sử thăm khám.
-        Sau khi chuyển đổi nhãn, bài toán trở thành phân loại nhị phân: có tái nhập viện và không tái nhập viện.
-        Dữ liệu có cả biến số và biến phân loại, do đó cần tiền xử lý bằng cách điền giá trị thiếu và mã hóa One-Hot Encoding.
-        Một số đặc trưng như số ngày nằm viện, số thuốc, số lần nhập viện trước đó và kết quả xét nghiệm được xem là có ảnh hưởng
-        đáng kể đến nguy cơ tái nhập viện.
-        """
-    )
+    st.write("""
+    Dữ liệu gồm nhiều đặc trưng liên quan đến hồ sơ bệnh án, thuốc điều trị và lịch sử thăm khám.
+    Sau khi chuyển đổi nhãn, bài toán trở thành phân loại nhị phân: có tái nhập viện và không tái nhập viện.
+    Dữ liệu có cả biến số và biến phân loại, do đó cần tiền xử lý bằng cách điền giá trị thiếu và mã hóa One-Hot Encoding.
+    Một số đặc trưng như số ngày nằm viện, số thuốc, số lần nhập viện trước đó và kết quả xét nghiệm được xem là có ảnh hưởng
+    đáng kể đến nguy cơ tái nhập viện.
+    """)
 
 
 # =========================
@@ -354,7 +350,8 @@ elif page == "Trang 2: Triển khai mô hình":
     st.write("Người dùng nhập thông tin bệnh nhân để hệ thống dự đoán nguy cơ tái nhập viện.")
     st.write(f"**Ngưỡng dự đoán đang dùng:** {best_threshold:.2f}")
 
-    X_raw, _, _, _, _ = prepare_data(df)
+    X_raw, _, cat_cols, num_cols, _ = prepare_data(df)
+    X_raw = X_raw[feature_cols].copy()
 
     st.subheader("Thiết kế giao diện nhập liệu")
     input_data = {}
@@ -365,22 +362,58 @@ elif page == "Trang 2: Triển khai mô hình":
         target_col = col1 if i % 2 == 0 else col2
 
         with target_col:
-            if X_raw[col].dtype == "object":
-                options = X_raw[col].dropna().astype(str).unique().tolist()
-                options = sorted(options)
-                input_data[col] = st.selectbox(col, options)
+            if col in cat_cols:
+                options = sorted(X_raw[col].dropna().astype(str).unique().tolist())
+
+                if len(options) == 0:
+                    input_data[col] = ""
+                    st.text_input(col, value="", disabled=True)
+                else:
+                    default_index = 0
+                    if "None" in options:
+                        default_index = options.index("None")
+                    input_data[col] = st.selectbox(col, options, index=default_index)
             else:
-                input_data[col] = st.number_input(
-                    col,
-                    min_value=float(X_raw[col].min()),
-                    max_value=float(X_raw[col].max()),
-                    value=float(X_raw[col].median())
-                )
+                series = pd.to_numeric(X_raw[col], errors="coerce").dropna()
+
+                if series.empty:
+                    input_data[col] = 0.0
+                    st.number_input(col, value=0.0, disabled=False)
+                else:
+                    min_val = float(series.min())
+                    max_val = float(series.max())
+                    median_val = float(series.median())
+
+                    if pd.api.types.is_integer_dtype(X_raw[col]):
+                        input_data[col] = st.number_input(
+                            col,
+                            min_value=int(min_val),
+                            max_value=int(max_val),
+                            value=int(median_val),
+                            step=1
+                        )
+                    else:
+                        input_data[col] = st.number_input(
+                            col,
+                            min_value=min_val,
+                            max_value=max_val,
+                            value=median_val
+                        )
 
     input_df = pd.DataFrame([input_data])
+    input_df = input_df.reindex(columns=feature_cols)
+
+    for col in cat_cols:
+        if col in input_df.columns:
+            input_df[col] = input_df[col].astype(str)
+
+    for col in num_cols:
+        if col in input_df.columns:
+            input_df[col] = pd.to_numeric(input_df[col], errors="coerce")
 
     st.subheader("Xử lý logic")
     st.write("Dữ liệu đầu vào sẽ được tiền xử lý giống như lúc huấn luyện mô hình, sau đó đưa vào LightGBM để dự đoán.")
+    st.dataframe(input_df, width="stretch")
 
     if st.button("Dự đoán"):
         prob = pipeline.predict_proba(input_df)[0][1]
@@ -456,10 +489,9 @@ else:
         giữa hai lớp. Trong tương lai, có thể cải thiện bằng cách bổ sung đặc trưng quan trọng hơn, thử thêm các thuật toán
         khác như XGBoost/CatBoost hoặc tối ưu sâu hơn threshold và siêu tham số.
         """
-
     )
 
     with st.expander("Xem tham số tốt nhất của mô hình"):
         st.json(best_params)
 
-    st.write(f"Best CV F1-score trong quá trình tìm tham số : **{best_cv_f1:.4f}**")
+    st.write(f"Best CV F1-score trong quá trình tìm tham số: **{best_cv_f1:.4f}**")
