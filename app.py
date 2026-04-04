@@ -509,12 +509,34 @@ elif page == "Trang 2: Triển khai mô hình":
 
     st.subheader("🧾 Nhập thông tin bệnh nhân")
 
+    label_map = {
+        "race": "race (chủng tộc bệnh nhân)",
+        "gender": "gender (giới tính)",
+        "age": "age (nhóm tuổi)",
+        "admission_type_id": "admission_type_id (loại nhập viện)",
+        "admission_source_id": "admission_source_id (nguồn nhập viện)",
+        "time_in_hospital": "time_in_hospital (số ngày nằm viện)",
+        "num_lab_procedures": "num_lab_procedures (số lần xét nghiệm)",
+        "num_procedures": "num_procedures (số thủ thuật)",
+        "num_medications": "num_medications (số loại thuốc)",
+        "number_outpatient": "number_outpatient (số lần khám ngoại trú)",
+        "number_emergency": "number_emergency (số lần vào cấp cứu)",
+        "number_inpatient": "number_inpatient (số lần nhập viện trước đó)",
+        "number_diagnoses": "number_diagnoses (số lượng chẩn đoán)",
+        "max_glu_serum": "max_glu_serum (mức đường huyết cao nhất)",
+        "A1Cresult": "A1Cresult (kết quả HbA1c)",
+        "insulin": "insulin (tình trạng dùng insulin)",
+        "change": "change (có thay đổi thuốc)",
+        "diabetesMed": "diabetesMed (có dùng thuốc tiểu đường)"
+    }
+
     input_data = {}
     col_left, col_right = st.columns(2)
     columns = X_raw.columns.tolist()
 
     for i, col in enumerate(columns):
         current_col = col_left if i % 2 == 0 else col_right
+        label = label_map.get(col, col)
 
         with current_col:
             if col in cat_cols2:
@@ -522,10 +544,10 @@ elif page == "Trang 2: Triển khai mô hình":
 
                 if len(options) == 0:
                     input_data[col] = ""
-                    st.text_input(col, value="", disabled=True)
+                    st.text_input(label, value="", disabled=True)
                 else:
                     input_data[col] = st.selectbox(
-                        label=col,
+                        label=label,
                         options=options,
                         index=0
                     )
@@ -534,7 +556,7 @@ elif page == "Trang 2: Triển khai mô hình":
 
                 if series.empty:
                     input_data[col] = 0.0
-                    st.number_input(col, value=0.0)
+                    st.number_input(label, value=0.0)
                 else:
                     min_val = float(series.min())
                     max_val = float(series.max())
@@ -542,7 +564,7 @@ elif page == "Trang 2: Triển khai mô hình":
 
                     if pd.api.types.is_integer_dtype(X_raw[col]):
                         input_data[col] = st.number_input(
-                            col,
+                            label,
                             min_value=int(min_val),
                             max_value=int(max_val),
                             value=int(median_val),
@@ -550,7 +572,7 @@ elif page == "Trang 2: Triển khai mô hình":
                         )
                     else:
                         input_data[col] = st.number_input(
-                            col,
+                            label,
                             min_value=min_val,
                             max_value=max_val,
                             value=median_val
@@ -576,7 +598,7 @@ elif page == "Trang 2: Triển khai mô hình":
         - Dữ liệu đầu vào được tiền xử lý theo đúng pipeline huấn luyện.
         - Kết quả đầu ra gồm:
           - Nhãn phân loại
-          - Xác suất / độ tin cậy 
+          - Xác suất / độ tin cậy
         """
     )
 
