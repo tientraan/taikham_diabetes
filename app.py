@@ -414,7 +414,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     st.subheader("📋 Hiển thị dữ liệu thô")
     st.dataframe(df.head(15), use_container_width=True)
 
-    st.subheader("📊 Các biểu đồ phân tích")
+    st.subheader("📊 Các biểu đồ phân tích dữ liệu")
 
     chart_col1, chart_col2 = st.columns(2)
 
