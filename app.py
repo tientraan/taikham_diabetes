@@ -418,7 +418,10 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     chart_col1, chart_col2 = st.columns(2)
 
     with chart_col1:
-        st.markdown("**Biểu đồ 1: Phân bố biến mục tiêu `target`**")
+        st.markdown(
+            "<h4 style='text-align:center; margin-bottom:10px;'>Biểu đồ 1: Phân bố biến mục tiêu <code>target</code></h4>",
+            unsafe_allow_html=True
+                    )
         fig1, ax1 = plt.subplots(figsize=(6, 4))
         eda_data["target"].value_counts().sort_index().plot(kind="bar", ax=ax1)
         ax1.set_xlabel("Target")
@@ -427,7 +430,10 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
         st.pyplot(fig1)
 
     with chart_col2:
-        st.markdown("**Biểu đồ 2: Top 10 cột có nhiều giá trị thiếu**")
+        st.markdown(
+            "<h4 style='text-align:center; margin-bottom:10px;'>Biểu đồ 2: Top 10 cột có nhiều giá trị thiếu</h4>",
+            unsafe_allow_html=True
+                    )
         missing_by_col = eda_data.isna().sum().sort_values(ascending=False).head(10)
         fig2, ax2 = plt.subplots(figsize=(6, 4))
         missing_by_col.plot(kind="bar", ax=ax2)
@@ -441,7 +447,10 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     col_left, col_center, col_right = st.columns([1, 2, 1])
 
     with col_center:
-        st.markdown("**Biểu đồ 3: Phân bố số ngày nằm viện")
+        st.markdown(
+            "<h4 style='text-align:center; margin-bottom:10px;'>Biểu đồ 3: Phân bố số ngày nằm viện</h4>",
+            unsafe_allow_html=True
+)
         
         fig3, ax3 = plt.subplots(figsize=(8, 5))
         eda_data["time_in_hospital"].dropna().astype(float).plot(kind="hist", bins=20, ax=ax3)
