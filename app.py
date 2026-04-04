@@ -421,7 +421,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
         st.markdown("**Biểu đồ 1: Phân bố biến mục tiêu `target`**")
         fig1, ax1 = plt.subplots(figsize=(6, 4))
         eda_data["target"].value_counts().sort_index().plot(kind="bar", ax=ax1)
-        ax1.set_title("Phân bố target (0 = Không, 1 = Có tái nhập viện)")
+        ax1.set_title("Phân bố target (0 = Không, 1 = Có tái nhập viện),loc="center"")
         ax1.set_xlabel("Target")
         ax1.set_ylabel("Số lượng")
         plt.tight_layout()
