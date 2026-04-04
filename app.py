@@ -639,7 +639,6 @@ else:
 
         fig_cm, ax_cm = plt.subplots(figsize=(5.5, 4.8))
         ax_cm.imshow(cm)
-        ax_cm.set_title("Confusion Matrix")
         ax_cm.set_xlabel("Dự đoán")
         ax_cm.set_ylabel("Thực tế")
         ax_cm.set_xticks([0, 1])
@@ -661,7 +660,7 @@ else:
         fig_roc, ax_roc = plt.subplots(figsize=(5.5, 4.8))
         ax_roc.plot(fpr, tpr, label=f"AUC = {auc:.4f}")
         ax_roc.plot([0, 1], [0, 1], linestyle="--")
-        ax_roc.set_title("ROC Curve")
+
         ax_roc.set_xlabel("False Positive Rate")
         ax_roc.set_ylabel("True Positive Rate")
         ax_roc.legend(loc="lower right")
