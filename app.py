@@ -373,7 +373,7 @@ with st.sidebar:
 st.markdown(
     """
     <div class="app-title">
-        <h1 style="margin:0;">🏥 Phân loại nguy cơ tái nhập viện với Streamlit</h1>
+        <h1 style="margin:0;">🏥 Phân loại nguy cơ tái nhập viện</h1>
     </div>
     """,
     unsafe_allow_html=True
