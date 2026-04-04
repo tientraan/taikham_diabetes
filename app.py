@@ -27,7 +27,7 @@ from lightgbm import LGBMClassifier
 # CẤU HÌNH TRANG
 # =========================================================
 st.set_page_config(
-    page_title="Phân loại tái nhập viện",
+    page_title="Ứng dụng phân loại tái nhập viện",
     page_icon="🏥",
     layout="wide"
 )
@@ -214,7 +214,6 @@ def find_best_threshold(y_true, y_prob):
 # =========================================================
 @st.cache_resource
 def train_or_load_model(df):
-    # 👉 LUÔN tạo thư mục trước (fix lỗi của bạn)
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     X, y, cat_cols, num_cols, _ = prepare_data(df)
@@ -233,7 +232,6 @@ def train_or_load_model(df):
         random_state=42
     )
 
-    # 👉 nếu có model thì load
     if os.path.exists(MODEL_PATH):
         saved = joblib.load(MODEL_PATH)
         return (
@@ -249,7 +247,6 @@ def train_or_load_model(df):
             num_cols
         )
 
-    # ================= TRAIN =================
     num_pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="median"))
     ])
@@ -296,7 +293,6 @@ def train_or_load_model(df):
     y_val_prob = best_pipeline.predict_proba(X_val)[:, 1]
     best_threshold, best_val_f1 = find_best_threshold(y_val, y_val_prob)
 
-    # 👉 lưu model (lúc này chắc chắn có thư mục)
     joblib.dump(
         {
             "pipeline": best_pipeline,
@@ -374,10 +370,9 @@ with st.sidebar:
 # HEADER CHUNG
 # =========================================================
 st.markdown(
-    f"""
+    """
     <div class="app-title">
         <h1 style="margin:0;">🏥 Phân loại nguy cơ tái nhập viện với Streamlit</h1>
-        
     </div>
     """,
     unsafe_allow_html=True
@@ -423,47 +418,47 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     chart_col1, chart_col2 = st.columns(2)
 
     with chart_col1:
-        st.markdown("**Biểu đồ 1: Phân bố nhãn `readmitted`**")
+        st.markdown("**Biểu đồ 1: Phân bố biến mục tiêu `target`**")
         fig1, ax1 = plt.subplots(figsize=(6, 4))
-        df["readmitted"].value_counts().plot(kind="bar", ax=ax1)
-        ax1.set_title("Phân bố biến readmitted")
-        ax1.set_xlabel("Nhóm")
+        eda_data["target"].value_counts().sort_index().plot(kind="bar", ax=ax1)
+        ax1.set_title("Phân bố target (0 = Không, 1 = Có tái nhập viện)")
+        ax1.set_xlabel("Target")
         ax1.set_ylabel("Số lượng")
         plt.tight_layout()
         st.pyplot(fig1)
 
     with chart_col2:
-        st.markdown("**Biểu đồ 2: Phân bố biến mục tiêu `target`**")
+        st.markdown("**Biểu đồ 2: Top 10 cột có nhiều giá trị thiếu**")
+        missing_by_col = eda_data.isna().sum().sort_values(ascending=False).head(10)
         fig2, ax2 = plt.subplots(figsize=(6, 4))
-        eda_data["target"].value_counts().sort_index().plot(kind="bar", ax=ax2)
-        ax2.set_title("Phân bố target (0 = Không, 1 = Có tái nhập viện)")
-        ax2.set_xlabel("Target")
-        ax2.set_ylabel("Số lượng")
+        missing_by_col.plot(kind="bar", ax=ax2)
+        ax2.set_title("Top 10 cột có nhiều giá trị thiếu")
+        ax2.set_xlabel("Cột")
+        ax2.set_ylabel("Số lượng thiếu")
+        plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
         st.pyplot(fig2)
 
     chart_col3, chart_col4 = st.columns(2)
 
     with chart_col3:
-        st.markdown("**Biểu đồ 3: Top 10 cột có nhiều giá trị thiếu**")
-        missing_by_col = eda_data.isna().sum().sort_values(ascending=False).head(10)
-
+        st.markdown("**Biểu đồ 3: Phân bố số ngày nằm viện**")
         fig3, ax3 = plt.subplots(figsize=(6, 4))
-        missing_by_col.plot(kind="bar", ax=ax3)
-        ax3.set_title("Top 10 cột có nhiều giá trị thiếu")
-        ax3.set_xlabel("Cột")
-        ax3.set_ylabel("Số lượng thiếu")
-        plt.xticks(rotation=45, ha="right")
+        eda_data["time_in_hospital"].dropna().astype(float).plot(kind="hist", bins=20, ax=ax3)
+        ax3.set_title("Phân bố time_in_hospital")
+        ax3.set_xlabel("Số ngày")
+        ax3.set_ylabel("Tần suất")
         plt.tight_layout()
         st.pyplot(fig3)
 
     with chart_col4:
-        st.markdown("**Biểu đồ 4: Phân bố số ngày nằm viện**")
+        st.markdown("**Biểu đồ 4: Tỷ lệ nhãn mục tiêu (%)**")
+        target_ratio = eda_data["target"].value_counts(normalize=True).sort_index() * 100
         fig4, ax4 = plt.subplots(figsize=(6, 4))
-        eda_data["time_in_hospital"].dropna().astype(float).plot(kind="hist", bins=20, ax=ax4)
-        ax4.set_title("Phân bố time_in_hospital")
-        ax4.set_xlabel("Số ngày")
-        ax4.set_ylabel("Tần suất")
+        target_ratio.plot(kind="bar", ax=ax4)
+        ax4.set_title("Tỷ lệ target theo phần trăm")
+        ax4.set_xlabel("Target")
+        ax4.set_ylabel("Tỷ lệ (%)")
         plt.tight_layout()
         st.pyplot(fig4)
 
@@ -475,12 +470,12 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     st.write(
         f"""
         - Dữ liệu gồm nhiều thông tin về đặc điểm bệnh nhân, xét nghiệm, thuốc điều trị và lịch sử nhập viện.
-        - Sau khi đổi nhãn, bài toán được đưa về **phân loại nhị phân**:  
+        - Biến `readmitted` ban đầu đã được chuyển thành **biến mục tiêu nhị phân**:
           **0 = không tái nhập viện**, **1 = có tái nhập viện**.
         - Tập dữ liệu có cả biến số và biến phân loại nên cần xử lý thiếu dữ liệu và mã hóa trước khi đưa vào mô hình.
-        - Tỷ lệ lớp hiện tại cho thấy dữ liệu **không cân bằng hoàn toàn**:  
+        - Tỷ lệ lớp hiện tại cho thấy dữ liệu **không cân bằng hoàn toàn**:
           lớp 0 chiếm khoảng **{class_ratio_0:.2f}%**, lớp 1 chiếm khoảng **{class_ratio_1:.2f}%**.
-        - Một số đặc trưng có khả năng liên quan đến rủi ro tái nhập viện là:  
+        - Một số đặc trưng có khả năng liên quan đến rủi ro tái nhập viện là:
           **time_in_hospital, num_medications, number_inpatient, number_emergency, number_diagnoses**.
         """
     )
@@ -528,11 +523,10 @@ elif page == "Trang 2: Triển khai mô hình":
                     input_data[col] = ""
                     st.text_input(col, value="", disabled=True)
                 else:
-                    default_index = 0
                     input_data[col] = st.selectbox(
                         label=col,
                         options=options,
-                        index=default_index
+                        index=0
                     )
             else:
                 series = pd.to_numeric(X_raw[col], errors="coerce").dropna()
@@ -580,8 +574,8 @@ elif page == "Trang 2: Triển khai mô hình":
         - Mô hình đã được load từ file đã huấn luyện.
         - Dữ liệu đầu vào được tiền xử lý theo đúng pipeline huấn luyện.
         - Kết quả đầu ra gồm:
-          - Nhãn phân loại
-          - Xác suất / độ tin cậy 
+          - Nhãn dự đoán
+          - Xác suất / độ tin cậy của dự đoán
         """
     )
 
@@ -642,7 +636,7 @@ else:
         cm = confusion_matrix(y_test, y_pred)
 
         fig_cm, ax_cm = plt.subplots(figsize=(5.5, 4.8))
-        im = ax_cm.imshow(cm)
+        ax_cm.imshow(cm)
         ax_cm.set_title("Confusion Matrix")
         ax_cm.set_xlabel("Dự đoán")
         ax_cm.set_ylabel("Thực tế")
