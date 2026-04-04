@@ -18,7 +18,8 @@ from sklearn.metrics import (
     f1_score,
     confusion_matrix,
     roc_auc_score,
-    classification_report
+    classification_report,
+    roc_curve
 )
 from lightgbm import LGBMClassifier
 
@@ -629,14 +630,15 @@ else:
     m5.metric("ROC-AUC", f"{auc:.4f}")
 
     st.subheader("🧩 Biểu đồ kỹ thuật")
-    chart1, chart2 = st.columns(2)
 
-    with chart1:
+    row1_col1, row1_col2 = st.columns(2)
+
+    with row1_col1:
         st.markdown("**Confusion Matrix**")
         cm = confusion_matrix(y_test, y_pred)
 
         fig_cm, ax_cm = plt.subplots(figsize=(5.5, 4.8))
-        ax_cm.imshow(cm)
+        im = ax_cm.imshow(cm)
         ax_cm.set_title("Confusion Matrix")
         ax_cm.set_xlabel("Dự đoán")
         ax_cm.set_ylabel("Thực tế")
@@ -652,15 +654,31 @@ else:
         plt.tight_layout()
         st.pyplot(fig_cm)
 
-    with chart2:
-        st.markdown("**Phân bố xác suất dự đoán**")
+    with row1_col2:
+        st.markdown("**Histogram xác suất dự đoán**")
         fig_prob, ax_prob = plt.subplots(figsize=(5.5, 4.8))
         ax_prob.hist(y_prob, bins=25)
-        ax_prob.set_title("Histogram xác suất dự đoán")
+        ax_prob.set_title("Phân bố xác suất dự đoán")
         ax_prob.set_xlabel("Xác suất lớp 1")
         ax_prob.set_ylabel("Tần suất")
         plt.tight_layout()
         st.pyplot(fig_prob)
+
+    left_space, center_chart, right_space = st.columns([1, 2, 1])
+
+    with center_chart:
+        st.markdown("**ROC Curve**")
+        fpr, tpr, _ = roc_curve(y_test, y_prob)
+
+        fig_roc, ax_roc = plt.subplots(figsize=(7, 5))
+        ax_roc.plot(fpr, tpr, label=f"AUC = {auc:.4f}")
+        ax_roc.plot([0, 1], [0, 1], linestyle="--")
+        ax_roc.set_title("ROC Curve")
+        ax_roc.set_xlabel("False Positive Rate")
+        ax_roc.set_ylabel("True Positive Rate")
+        ax_roc.legend(loc="lower right")
+        plt.tight_layout()
+        st.pyplot(fig_roc)
 
     st.subheader("📄 Báo cáo phân loại")
     report = classification_report(y_test, y_pred, zero_division=0, output_dict=True)
@@ -679,15 +697,11 @@ else:
 
     st.write(
         f"""
-        - Mô hình hiện tại đạt **Accuracy = {acc:.4f}**, **Precision = {pre:.4f}**, **Recall = {rec:.4f}**, **F1-score = {f1:.4f}**.
+        - Mô hình hiện tại đạt **Accuracy = {acc:.4f}**, **Precision = {pre:.4f}**, **Recall = {rec:.4f}**, **F1-score = {f1:.4f}**, **ROC-AUC = {auc:.4f}**.
         - **False Negative = {fn}** là số bệnh nhân thực sự có nguy cơ nhưng mô hình dự đoán thấp, đây là nhóm sai số cần chú ý nhất.
         - **False Positive = {fp}** là số trường hợp mô hình cảnh báo rủi ro nhưng thực tế không thuộc lớp nguy cơ.
+        - ROC Curve giúp đánh giá khả năng phân biệt hai lớp của mô hình trên nhiều ngưỡng khác nhau.
         - Với bài toán hỗ trợ phát hiện sớm bệnh nhân rủi ro, cần ưu tiên hạn chế bỏ sót nên chỉ số **Recall** rất quan trọng.
-        - Có thể cải thiện thêm bằng cách:
-          1. Điều chỉnh threshold phù hợp mục tiêu,
-          2. Chọn thêm đặc trưng liên quan mạnh hơn,
-          3. Làm sạch dữ liệu thiếu tốt hơn,
-          4. Cân bằng dữ liệu hoặc tinh chỉnh siêu tham số sâu hơn.
         """
     )
 
