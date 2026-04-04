@@ -634,7 +634,10 @@ else:
     row1_col1, row1_col2 = st.columns(2)
 
     with row1_col1:
-        st.markdown("**Confusion Matrix**")
+        st.markdown(
+            "<h4 style='text-align:center; margin-bottom:10px;'>Biểu đồ 1: Confusion Matrix</h4>",
+            unsafe_allow_html=True
+)
         cm = confusion_matrix(y_test, y_pred)
 
         fig_cm, ax_cm = plt.subplots(figsize=(5.5, 4.8))
@@ -654,7 +657,10 @@ else:
         st.pyplot(fig_cm)
 
     with row1_col2:
-        st.markdown("**ROC Curve**")
+        st.markdown(
+            "<h4 style='text-align:center; margin-bottom:10px;'>Biểu đồ 2: ROC Curve</h4>",
+            unsafe_allow_html=True
+)
         fpr, tpr, _ = roc_curve(y_test, y_prob)
 
         fig_roc, ax_roc = plt.subplots(figsize=(5.5, 4.8))
