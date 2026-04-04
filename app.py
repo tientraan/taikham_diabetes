@@ -442,7 +442,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
     col_left, col_center, col_right = st.columns([1, 2, 1])
 
     with col_center:
-        st.markdown("# Biểu đồ 3: Phân bố số ngày nằm viện")
+        st.markdown("**Biểu đồ 3: Phân bố số ngày nằm viện")
         
         fig3, ax3 = plt.subplots(figsize=(8, 5))
         eda_data["time_in_hospital"].dropna().astype(float).plot(kind="hist", bins=20, ax=ax3)
