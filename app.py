@@ -589,9 +589,9 @@ elif page == "Trang 2: Triển khai mô hình":
         k1, k2 = st.columns(2)
         with k1:
             if pred == 1:
-                st.error("Kết luận: Bệnh nhân **có nguy cơ tái nhập viện**.")
+                st.error("Kết luận: Bệnh nhân **cần tái nhập viện**.")
             else:
-                st.success("Kết luận: Bệnh nhân **có nguy cơ thấp**.")
+                st.success("Kết luận: Bệnh nhân **không cần tái nhập viện**.")
 
         with k2:
             st.info(f"Độ tin cậy / Xác suất dự đoán: **{prob:.4f}**")
@@ -638,7 +638,7 @@ else:
         cm = confusion_matrix(y_test, y_pred)
 
         fig_cm, ax_cm = plt.subplots(figsize=(5.5, 4.8))
-        im = ax_cm.imshow(cm)
+        ax_cm.imshow(cm)
         ax_cm.set_title("Confusion Matrix")
         ax_cm.set_xlabel("Dự đoán")
         ax_cm.set_ylabel("Thực tế")
@@ -655,28 +655,17 @@ else:
         st.pyplot(fig_cm)
 
     with row1_col2:
-        st.markdown("**Histogram xác suất dự đoán**")
-        fig_prob, ax_prob = plt.subplots(figsize=(5.5, 4.8))
-        ax_prob.hist(y_prob, bins=25)
-        ax_prob.set_title("Phân bố xác suất dự đoán")
-        ax_prob.set_xlabel("Xác suất lớp 1")
-        ax_prob.set_ylabel("Tần suất")
-        plt.tight_layout()
-        st.pyplot(fig_prob)
-
-    left_space, center_chart, right_space = st.columns([1, 2, 1])
-
-    with center_chart:
         st.markdown("**ROC Curve**")
         fpr, tpr, _ = roc_curve(y_test, y_prob)
 
-        fig_roc, ax_roc = plt.subplots(figsize=(7, 5))
+        fig_roc, ax_roc = plt.subplots(figsize=(5.5, 4.8))
         ax_roc.plot(fpr, tpr, label=f"AUC = {auc:.4f}")
         ax_roc.plot([0, 1], [0, 1], linestyle="--")
         ax_roc.set_title("ROC Curve")
         ax_roc.set_xlabel("False Positive Rate")
         ax_roc.set_ylabel("True Positive Rate")
         ax_roc.legend(loc="lower right")
+
         plt.tight_layout()
         st.pyplot(fig_roc)
 
