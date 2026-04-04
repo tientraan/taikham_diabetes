@@ -510,24 +510,24 @@ elif page == "Trang 2: Triển khai mô hình":
     st.subheader("🧾 Nhập thông tin bệnh nhân")
 
     label_map = {
-        "race": "race (chủng tộc bệnh nhân)",
-        "gender": "gender (giới tính)",
-        "age": "age (nhóm tuổi)",
-        "admission_type_id": "admission_type_id (loại nhập viện)",
-        "admission_source_id": "admission_source_id (nguồn nhập viện)",
-        "time_in_hospital": "time_in_hospital (số ngày nằm viện)",
-        "num_lab_procedures": "num_lab_procedures (số lần xét nghiệm)",
-        "num_procedures": "num_procedures (số thủ thuật)",
-        "num_medications": "num_medications (số loại thuốc)",
-        "number_outpatient": "number_outpatient (số lần khám ngoại trú)",
-        "number_emergency": "number_emergency (số lần vào cấp cứu)",
-        "number_inpatient": "number_inpatient (số lần nhập viện trước đó)",
-        "number_diagnoses": "number_diagnoses (số lượng chẩn đoán)",
-        "max_glu_serum": "max_glu_serum (mức đường huyết cao nhất)",
-        "A1Cresult": "A1Cresult (kết quả HbA1c)",
-        "insulin": "insulin (tình trạng dùng insulin)",
-        "change": "change (có thay đổi thuốc)",
-        "diabetesMed": "diabetesMed (có dùng thuốc tiểu đường)"
+        "race": "race (Chủng tộc bệnh nhân)",
+        "gender": "gender (Giới tính)",
+        "age": "age (Nhóm tuổi)",
+        "admission_type_id": "admission_type_id (Loại nhập viện)",
+        "admission_source_id": "admission_source_id (Nguồn nhập viện)",
+        "time_in_hospital": "time_in_hospital (Số ngày nằm viện)",
+        "num_lab_procedures": "num_lab_procedures (Số lần xét nghiệm)",
+        "num_procedures": "num_procedures (Số thủ thuật)",
+        "num_medications": "num_medications (Số loại thuốc)",
+        "number_outpatient": "number_outpatient (Số lần khám ngoại trú)",
+        "number_emergency": "number_emergency (Số lần vào cấp cứu)",
+        "number_inpatient": "number_inpatient (Số lần nhập viện trước đó)",
+        "number_diagnoses": "number_diagnoses (Số lượng chẩn đoán)",
+        "max_glu_serum": "max_glu_serum (Mức đường huyết cao nhất)",
+        "A1Cresult": "A1Cresult (Kết quả HbA1c)",
+        "insulin": "insulin (Tình trạng dùng insulin)",
+        "change": "change (Có thay đổi thuốc)",
+        "diabetesMed": "diabetesMed (Có dùng thuốc tiểu đường)"
     }
 
     input_data = {}
