@@ -376,7 +376,7 @@ with st.sidebar:
 st.markdown(
     f"""
     <div class="app-title">
-        <h1 style="margin:0;">🏥 Ứng dụng Machine Learning với Streamlit</h1>
+        <h1 style="margin:0;">🏥 Phân loại nguy cơ tái nhập viện với Streamlit</h1>
         <p style="margin:8px 0 0 0; font-size:18px;">
             {TITLE}
         </p>
@@ -692,10 +692,10 @@ else:
         - **False Positive = {fp}** là số trường hợp mô hình cảnh báo rủi ro nhưng thực tế không thuộc lớp nguy cơ.
         - Với bài toán hỗ trợ phát hiện sớm bệnh nhân rủi ro, cần ưu tiên hạn chế bỏ sót nên chỉ số **Recall** rất quan trọng.
         - Có thể cải thiện thêm bằng cách:
-          1. điều chỉnh threshold phù hợp mục tiêu,
-          2. chọn thêm đặc trưng liên quan mạnh hơn,
-          3. làm sạch dữ liệu thiếu tốt hơn,
-          4. cân bằng dữ liệu hoặc tinh chỉnh siêu tham số sâu hơn.
+          1. Điều chỉnh threshold phù hợp mục tiêu,
+          2. Chọn thêm đặc trưng liên quan mạnh hơn,
+          3. Làm sạch dữ liệu thiếu tốt hơn,
+          4. Cân bằng dữ liệu hoặc tinh chỉnh siêu tham số sâu hơn.
         """
     )
 
