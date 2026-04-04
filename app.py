@@ -27,7 +27,7 @@ from lightgbm import LGBMClassifier
 # CẤU HÌNH TRANG
 # =========================================================
 st.set_page_config(
-    page_title="Ứng dụng phân loại tái nhập viện",
+    page_title="Phân loại tái nhập viện",
     page_icon="🏥",
     layout="wide"
 )
