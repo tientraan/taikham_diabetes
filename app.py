@@ -421,7 +421,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
         st.markdown("**Biểu đồ 1: Phân bố biến mục tiêu `target`**")
         fig1, ax1 = plt.subplots(figsize=(6, 4))
         eda_data["target"].value_counts().sort_index().plot(kind="bar", ax=ax1)
-        ax1.set_title("Phân bố target (0 = Không, 1 = Có tái nhập viện)")
+        ax1.set_title("Phân bố target (0 = Không, 1 = Có tái nhập viện)", loc="center", fontsize=12, pad=10)
         ax1.set_xlabel("Target")
         ax1.set_ylabel("Số lượng")
         plt.tight_layout()
@@ -432,7 +432,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
         missing_by_col = eda_data.isna().sum().sort_values(ascending=False).head(10)
         fig2, ax2 = plt.subplots(figsize=(6, 4))
         missing_by_col.plot(kind="bar", ax=ax2)
-        ax2.set_title("Top 10 cột có nhiều giá trị thiếu")
+        ax2.set_title("Top 10 cột có nhiều giá trị thiếu", loc="center", fontsize=12, pad=10)
         ax2.set_xlabel("Cột")
         ax2.set_ylabel("Số lượng thiếu")
         plt.xticks(rotation=45, ha="right")
@@ -447,7 +447,7 @@ if page == "Trang 1: Giới thiệu & Khám phá dữ liệu (EDA)":
         fig3, ax3 = plt.subplots(figsize=(8, 5))
         eda_data["time_in_hospital"].dropna().astype(float).plot(kind="hist", bins=20, ax=ax3)
         
-        ax3.set_title("Phân bố time_in_hospital")
+        ax3.set_title("Phân bố time_in_hospital", loc="center", fontsize=12, pad=10)
         ax3.set_xlabel("Số ngày")
         ax3.set_ylabel("Tần suất")
         
