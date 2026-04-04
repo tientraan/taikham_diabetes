@@ -377,9 +377,7 @@ st.markdown(
     f"""
     <div class="app-title">
         <h1 style="margin:0;">🏥 Phân loại nguy cơ tái nhập viện với Streamlit</h1>
-        <p style="margin:8px 0 0 0; font-size:18px;">
-            {TITLE}
-        </p>
+        
     </div>
     """,
     unsafe_allow_html=True
