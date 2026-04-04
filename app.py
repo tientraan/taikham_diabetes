@@ -214,6 +214,9 @@ def find_best_threshold(y_true, y_prob):
 # =========================================================
 @st.cache_resource
 def train_or_load_model(df):
+    # 👉 LUÔN tạo thư mục trước (fix lỗi của bạn)
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
     X, y, cat_cols, num_cols, _ = prepare_data(df)
 
     X_train_full, X_test, y_train_full, y_test = train_test_split(
@@ -230,29 +233,23 @@ def train_or_load_model(df):
         random_state=42
     )
 
+    # 👉 nếu có model thì load
     if os.path.exists(MODEL_PATH):
         saved = joblib.load(MODEL_PATH)
-        required_keys = [
-            "pipeline",
-            "best_threshold",
-            "best_params",
-            "best_cv_f1",
-            "feature_cols"
-        ]
-        if all(k in saved for k in required_keys):
-            return (
-                saved["pipeline"],
-                X_test,
-                y_test,
-                X,
-                saved["best_threshold"],
-                saved["best_params"],
-                saved["best_cv_f1"],
-                saved["feature_cols"],
-                cat_cols,
-                num_cols
-            )
+        return (
+            saved["pipeline"],
+            X_test,
+            y_test,
+            X,
+            saved["best_threshold"],
+            saved["best_params"],
+            saved["best_cv_f1"],
+            saved["feature_cols"],
+            cat_cols,
+            num_cols
+        )
 
+    # ================= TRAIN =================
     num_pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="median"))
     ])
@@ -279,26 +276,18 @@ def train_or_load_model(df):
     ])
 
     param_grid = {
-        "model__n_estimators": [300, 500, 800],
-        "model__learning_rate": [0.03, 0.05, 0.07],
-        "model__num_leaves": [31, 63, 127],
-        "model__max_depth": [-1, 6, 8, 10],
-        "model__min_child_samples": [10, 20, 30],
-        "model__subsample": [0.8, 0.9, 1.0],
-        "model__colsample_bytree": [0.8, 0.9, 1.0],
-        "model__reg_alpha": [0.0, 0.1, 0.2],
-        "model__reg_lambda": [1, 2, 3]
+        "model__n_estimators": [300, 500],
+        "model__learning_rate": [0.03, 0.05],
+        "model__num_leaves": [31, 63],
     }
 
     search = RandomizedSearchCV(
-        estimator=pipeline,
+        pipeline,
         param_distributions=param_grid,
-        n_iter=15,
+        n_iter=5,
         scoring="f1",
         cv=3,
-        random_state=42,
-        n_jobs=1,
-        verbose=1
+        random_state=42
     )
 
     search.fit(X_train, y_train)
@@ -307,14 +296,13 @@ def train_or_load_model(df):
     y_val_prob = best_pipeline.predict_proba(X_val)[:, 1]
     best_threshold, best_val_f1 = find_best_threshold(y_val, y_val_prob)
 
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    # 👉 lưu model (lúc này chắc chắn có thư mục)
     joblib.dump(
         {
             "pipeline": best_pipeline,
             "best_threshold": best_threshold,
             "best_params": search.best_params_,
             "best_cv_f1": search.best_score_,
-            "best_val_f1": best_val_f1,
             "feature_cols": X.columns.tolist()
         },
         MODEL_PATH
