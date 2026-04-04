@@ -575,8 +575,8 @@ elif page == "Trang 2: Triển khai mô hình":
         - Mô hình đã được load từ file đã huấn luyện.
         - Dữ liệu đầu vào được tiền xử lý theo đúng pipeline huấn luyện.
         - Kết quả đầu ra gồm:
-          - Nhãn dự đoán
-          - Xác suất / độ tin cậy của dự đoán
+          - Nhãn phân loại
+          - Xác suất / độ tin cậy 
         """
     )
 
