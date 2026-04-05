@@ -4,8 +4,8 @@ Mục tiêu
 Phát hiện sớm bệnh nhân có nguy cơ tái nhập viện
 Hỗ trợ bác sĩ đưa ra quyết định điều trị
 Giảm chi phí và tải cho hệ thống y tế
-## 📁 Cấu trúc thư mục
 ```
+# Cấu trúc thư mục
 ```
 taikham_diabetes/
 │
